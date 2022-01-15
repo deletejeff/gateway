@@ -1,0 +1,98 @@
+#server:
+#  port: 8000
+spring:
+  application:
+    name: gateway
+  cloud:
+    nacos:
+      discovery:
+#        server-addr: 172.26.33.9:8848,172.26.33.9:8849,172.26.33.9:8850
+        server-addr: 192.168.0.112:8848,192.168.0.112:8849,192.168.0.112:8850
+        cluster-name: gaoxin
+        metadata:
+          management:
+            context-path: /actuator
+    sentinel:
+      # 关闭对Spring MVC端点的保护
+      #      filter:
+      #        enabled: false
+      transport:
+        dashboard: localhost:8080
+      datasource:
+        flow:
+          nacos:
+#            server-addr: 172.26.33.9:8848
+            server-addr: 192.168.0.112:8848
+            dataId: ${spring.application.name}-flow-rules
+            groupId: DEFAULT_GROUP
+            rule-type: flow
+            data-type: json
+        degrade:
+          nacos:
+            server-addr: 192.168.0.112:8848
+            dataId: ${spring.application.name}-degrade-rules
+            groupId: DEFAULT_GROUP
+            rule-type: degrade
+            data-type: json
+        system:
+          nacos:
+            server-addr: 192.168.0.112:8848
+            dataId: ${spring.application.name}-system-rules
+            groupId: DEFAULT_GROUP
+            rule-type: system
+            data-type: json
+        authority:
+          nacos:
+            server-addr: 192.168.0.112:8848
+            dataId: ${spring.application.name}-authority-rules
+            groupId: DEFAULT_GROUP
+            rule-type: authority
+            data-type: json
+        param-flow:
+          nacos:
+            server-addr: 192.168.0.112:8848
+            dataId: ${spring.application.name}-param-flow-rules
+            groupId: DEFAULT_GROUP
+            rule-type: param-flow
+            data-type: json
+      eager: true #sentinel 流控懒加载，true：关闭
+    gateway:
+#      discovery:
+#        locator:
+#          enabled: true
+#          lower-case-service-id: true
+#      httpserver:
+#        wiretap: true
+#      httpclient:
+#        wiretap: true
+      #访问/user则进入该路由
+      routes:
+        - id: user_route
+          uri: lb://user/
+          predicates:
+            - Path=/user/**
+            - Between=2021-01-11T14:45:09.037+08:00[Asia/Shanghai], 2099-01-13T15:45:09.037+08:00[Asia/Shanghai]
+            - MyTimeBetween=上午0:00, 下午11:59
+          filters:
+            - AddRequestHeader=X-Request-ooooooo, 11111111111
+            - MyFilter=X-Params, 123123123
+        - id: content_route
+          uri: lb://content/content
+          predicates:
+            - Path=/content/**
+  zipkin:
+    base-url: http://127.0.0.1:9411
+  sleuth:
+    sampler:
+      probability: 1.0
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
+logging:
+  level:
+    org.springframework.cloud.gateway: debug
